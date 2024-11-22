@@ -181,9 +181,9 @@ int main(int argc, char* argv[]) {
     printf("Sequential time: %.3f seconds\n", sequential_time);
 
     // parallel version
-    double start_time = omp_get_wtime();
+    double start_time2 = omp_get_wtime();
     denoisingParallel(img, 0, 0, img->width, img->height, threshold);
-    double parallel_time = omp_get_wtime() - start_time;
+    double parallel_time = omp_get_wtime() - start_time2;
     printf("Sequential time: %.3f seconds\n", parallel_time);
 
     writePPM(output_file, img);
