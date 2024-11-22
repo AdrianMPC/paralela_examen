@@ -143,7 +143,7 @@ void denoisingSequential(Image* img, int x, int y, int width, int height, double
 }
 
 void denoisingParallel(Image* img, int x, int y, int width, int height, double threshold) {
-    if (width <= 1 || height <= 1) return; // si es muy chico para la recursividad 
+    if (width <= 1 || height <= 1) return; // si es muy chico PARA la recursividad 
 
     Pixel avg = calculateAverage(img, x, y, width, height);
     double variance = calculateVariance(img, x, y, width, height, avg);
@@ -153,11 +153,17 @@ void denoisingParallel(Image* img, int x, int y, int width, int height, double t
     } else {
         int new_width = width / 2;
         int new_height = height / 2;
-
-        denoisingParallel(img, x, y, new_width, new_height, threshold);
-        denoisingParallel(img, x + new_width, y, new_width, new_height, threshold);
-        denoisingParallel(img, x, y + new_height, new_width, new_height, threshold);
-        denoisingParallel(img, x + new_width, y + new_height, new_width, new_height, threshold);
+        #pragma omp parallel sections
+        {
+            #pragma omp section // que cada thread se encargue de cada nueva division en 4
+            {
+                denoisingParallel(img, x, y, new_width, new_height, threshold);
+                denoisingParallel(img, x + new_width, y, new_width, new_height, threshold);
+                denoisingParallel(img, x, y + new_height, new_width, new_height, threshold);
+                denoisingParallel(img, x + new_width, y + new_height, new_width, new_height, threshold);
+            }
+        }
+        
     }
 }
 
