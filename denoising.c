@@ -46,7 +46,7 @@ Image* readPPM(const char* filename) {
 
     fclose(file);
     return img;
-}
+} // no paralelizar ya que esta leyendo data
 
 // Function to write PPM image
 void writePPM(const char* filename, Image* img) {
@@ -69,7 +69,7 @@ void writePPM(const char* filename, Image* img) {
     }
 
     fclose(file);
-}
+} // no paralelizar ya que esta escribiendo data
 
 // Calculate average color in a region
 Pixel calculateAverage(Image* img, int x, int y, int width, int height) {
@@ -98,7 +98,7 @@ Pixel calculateAverage(Image* img, int x, int y, int width, int height) {
 double calculateVariance(Image* img, int x, int y, int width, int height, Pixel avg) {
     double sum = 0;
     int count = 0;
-
+     // collapse tal evz
     for (int j = y; j < y + height; j++) {
         for (int i = x; i < x + width; i++) {
             Pixel p = img->data[j * img->width + i];
@@ -142,6 +142,25 @@ void denoisingSequential(Image* img, int x, int y, int width, int height, double
     }
 }
 
+void denoisingParallel(Image* img, int x, int y, int width, int height, double threshold) {
+    if (width <= 1 || height <= 1) return; // si es muy chico para la recursividad 
+
+    Pixel avg = calculateAverage(img, x, y, width, height);
+    double variance = calculateVariance(img, x, y, width, height, avg);
+
+    if (variance < threshold) {
+        fillRegion(img, x, y, width, height, avg);
+    } else {
+        int new_width = width / 2;
+        int new_height = height / 2;
+
+        denoisingParallel(img, x, y, new_width, new_height, threshold);
+        denoisingParallel(img, x + new_width, y, new_width, new_height, threshold);
+        denoisingParallel(img, x, y + new_height, new_width, new_height, threshold);
+        denoisingParallel(img, x + new_width, y + new_height, new_width, new_height, threshold);
+    }
+}
+
 int main(int argc, char* argv[]) {
     if (argc != 4) {
         fprintf(stderr, "Usage: %s <input.ppm> <output.ppm> <threshold>\n", argv[0]);
@@ -160,6 +179,12 @@ int main(int argc, char* argv[]) {
     double sequential_time = omp_get_wtime() - start_time;
 
     printf("Sequential time: %.3f seconds\n", sequential_time);
+
+    // parallel version
+    double start_time = omp_get_wtime();
+    denoisingParallel(img, 0, 0, img->width, img->height, threshold);
+    double parallel_time = omp_get_wtime() - start_time;
+    printf("Sequential time: %.3f seconds\n", parallel_time);
 
     writePPM(output_file, img);
 
