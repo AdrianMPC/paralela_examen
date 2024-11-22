@@ -151,17 +151,30 @@ void denoisingParallel(Image* img, int x, int y, int width, int height, double t
     if (variance < threshold) {
         fillRegion(img, x, y, width, height, avg);
     } else {
-        int new_width = width / 2;
-        int new_height = height / 2;
         #pragma omp parallel sections
         {
+            int new_width = width / 2;
+            int new_height = height / 2;
+       
             #pragma omp section // que cada thread se encargue de cada nueva division en 4
             {
                 denoisingParallel(img, x, y, new_width, new_height, threshold);
-                denoisingParallel(img, x + new_width, y, new_width, new_height, threshold);
-                denoisingParallel(img, x, y + new_height, new_width, new_height, threshold);
-                denoisingParallel(img, x + new_width, y + new_height, new_width, new_height, threshold);
             }
+
+            #pragma omp section // que cada thread se encargue de cada nueva division en 4
+            {
+                denoisingParallel(img, x + new_width, y, new_width, new_height, threshold);
+            }
+
+            #pragma omp section // que cada thread se encargue de cada nueva division en 4
+            {
+               denoisingParallel(img, x, y + new_height, new_width, new_height, threshold);
+            }
+
+            #pragma omp section // que cada thread se encargue de cada nueva division en 4
+            {
+                denoisingParallel(img, x + new_width, y + new_height, new_width, new_height, threshold);
+            }  
         }
         
     }
